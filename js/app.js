@@ -186,8 +186,11 @@ function submitForm() {
   // 🔥 MOST IMPORTANT LINE
   formData.append("blocks", JSON.stringify(blocks));
 
-  fetch("https://lucifer0001.app.n8n.cloud/webhook/blog-post", {
+  fetch("https://lucifer0001.app.n8n.cloud/webhook-test/blog-post", {
     method: "POST",
+    headers: {
+    'x-api-key': 'BLOGGER_UI_SECRET_123'
+  },
     body: formData,
   })
     .then((res) => res.json())
