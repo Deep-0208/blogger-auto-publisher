@@ -178,6 +178,29 @@ function submitForm() {
     return;
   }
 
+  //reset form after submission
+  function resetForm() {
+  // Clear title
+  const titleInput = document.getElementById("title");
+  titleInput.value = "";
+  titleInput.classList.remove("valid", "invalid");
+
+  // Hide title error
+  document.getElementById("title-error").classList.remove("show");
+
+  // Remove all blocks
+  const blocksContainer = document.getElementById("blocks");
+  blocksContainer.innerHTML = "";
+
+  // Reset counter
+  blockCount = 0;
+
+  // Add default 2 blocks again
+  addBlock();
+  addBlock();
+}
+
+
   // Show loading state
   const publishBtn = document.querySelector(".btn-publish");
   publishBtn.classList.add("loading");
@@ -209,6 +232,7 @@ function submitForm() {
     })
     .then((data) => {
       showToast(data.message || "Post published successfully!", "success");
+      resetForm();
     })
     .catch((err) => {
       console.error(err);
