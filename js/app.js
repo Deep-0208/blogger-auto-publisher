@@ -189,25 +189,34 @@ function submitForm() {
   fetch("https://lucifer0001.app.n8n.cloud/webhook-test/blog-post", {
     method: "POST",
     headers: {
-    'x-api-key': 'BLOGGER_UI_SECRET_123'
-  },
+      "x-api-key": "BLOGGER_UI_SECRET_123",
+    },
     body: formData,
   })
-    .then((res) => res.json())
-    .then((data) => {
-      publishBtn.classList.remove("loading");
-      publishBtn.disabled = false;
-
-      if (data.success) {
-        showToast(data.message || "Post published successfully!", "success");
-      } else {
-        showToast("Failed to publish post", "error");
+    .then(async (res) => {
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        // response was empty (security rejection)
       }
+
+      if (!res.ok) {
+        throw new Error(data.message || "Request failed");
+      }
+
+      return data;
+    })
+    .then((data) => {
+      showToast(data.message || "Post published successfully!", "success");
     })
     .catch((err) => {
       console.error(err);
+      showToast(err.message || "Unauthorized or network error", "error");
+    })
+    .finally(() => {
+      const publishBtn = document.querySelector(".btn-publish");
       publishBtn.classList.remove("loading");
       publishBtn.disabled = false;
-      showToast("Network error. Please try again.", "error");
     });
 }
