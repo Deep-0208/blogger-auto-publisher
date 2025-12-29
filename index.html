@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Blogger Post</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #1a202c;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      padding: 48px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 15px;
+      margin-bottom: 40px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      color: #2d3748;
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .required::after {
+      content: " *";
+      color: #e53e3e;
+    }
+
+    #title {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+    }
+
+    #title:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    #title.invalid {
+      border-color: #fc8181;
+      background: #fff5f5;
+    }
+
+    #title.valid {
+      border-color: #68d391;
+      background: #f0fff4;
+    }
+
+    .error-message {
+      color: #e53e3e;
+      font-size: 13px;
+      margin-bottom: 24px;
+      display: none;
+      animation: shake 0.3s ease;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-8px);
+      }
+
+      75% {
+        transform: translateX(8px);
+      }
+    }
+
+    #blocks {
+      margin-bottom: 24px;
+    }
+
+    .block {
+      border: 2px solid #e2e8f0;
+      padding: 24px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      background: #fafbfc;
+      transition: all 0.3s ease;
+      animation: slideIn 0.3s ease-out;
+      position: relative;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .block:hover {
+      border-color: #cbd5e0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .block-header strong {
+      font-size: 16px;
+      color: #2d3748;
+      font-weight: 600;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-family: inherit;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 14px 16px;
+      font-size: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: inherit;
+      resize: vertical;
+      transition: all 0.3s ease;
+      background: #ffffff;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed #cbd5e0;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    input[type="file"]:hover {
+      border-color: #667eea;
+      background: #f7fafc;
+    }
+
+    .file-preview {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f7fafc;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #4a5568;
+      display: none;
+    }
+
+    .file-preview.show {
+      display: block;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-add {
+      background: #f7fafc;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-add:hover:not(:disabled) {
+      background: #667eea;
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-add:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-publish {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 14px 32px;
+      font-size: 16px;
+      box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-publish:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-publish:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-publish.loading {
+      pointer-events: none;
+    }
+
+    .btn-publish.loading .btn-text {
+      opacity: 0;
+    }
+
+    .btn-remove {
+      background: #fff5f5;
+      color: #e53e3e;
+      border: 1px solid #feb2b2;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    .btn-remove:hover {
+      background: #e53e3e;
+      color: #ffffff;
+      border-color: #e53e3e;
+      transform: scale(1.05);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      opacity: 0;
+    }
+
+    .btn-publish.loading .spinner {
+      opacity: 1;
+    }
+
+    @keyframes spin {
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: #ffffff;
+      padding: 16px 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast.success {
+      border-left: 4px solid #48bb78;
+    }
+
+    .toast.error {
+      border-left: 4px solid #f56565;
+    }
+
+    .toast-icon {
+      font-size: 20px;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h2 {
+        font-size: 26px;
+      }
+
+      .action-bar {
+        flex-direction: column;
+      }
+
+      .btn-add,
+      .btn-publish {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .toast {
+        right: 12px;
+        left: 12px;
+        top: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 20px 12px;
+      }
+
+      .container {
+        padding: 24px 20px;
+      }
+
+      .block {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h2>Create Blogger Post</h2>
+    <p class="subtitle">Design your content with flexible text and image blocks</p>
+
+    <label class="required">Post Title</label>
+    <input type="text" id="title" placeholder="Enter your post title..." required>
+    <div id="title-error" class="error-message">Please enter a post title</div>
+
+    <div id="blocks"></div>
+
+    <div class="action-bar">
+      <button class="btn-add" onclick="addBlock()">➕ Add Block</button>
+      <button class="btn-publish" onclick="submitForm()">
+        <span class="btn-text">🚀 Publish Post</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+
+
+  </div>
+
+  <script>
+    let blockCount = 0;
+
+    /* ➕ Add block */
+    function addBlock() {
+      blockCount++;
+
+      const block = document.createElement('div');
+      block.className = 'block';
+
+      block.innerHTML = `
+    <div class="block-header">
+      <strong>Block ${blockCount}</strong>
+      <button class="btn-remove" onclick="removeBlock(this)">❌ Remove</button>
+    </div>
+
+    <label>Block Type</label>
+    <select onchange="changeType(this)">
+      <option value="">Select block type...</option>
+      <option value="text">📝 Text Content</option>
+      <option value="image">🖼️ Image Upload</option>
+    </select>
+
+    <div class="block-content"></div>
+  `;
+
+      document.getElementById('blocks').appendChild(block);
+    }
+
+    /* ❌ Remove block with animation */
+    function removeBlock(btn) {
+      const block = btn.closest('.block');
+      block.style.animation = 'slideOut 0.3s ease-out';
+      setTimeout(() => block.remove(), 300);
+    }
+
+    /* Slide out animation */
+    const style = document.createElement('style');
+    style.textContent = `
+  @keyframes slideOut {
+    to {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+  }
+`;
+    document.head.appendChild(style);
+
+    /* 🔄 Change block type */
+    function changeType(select) {
+      const container = select.parentElement.querySelector('.block-content');
+      container.innerHTML = '';
+
+      if (select.value === 'text') {
+        container.innerHTML = `
+      <textarea placeholder="Enter your text content here..."></textarea>
+    `;
+      }
+
+      if (select.value === 'image') {
+        container.innerHTML = `
+      <input type="file" accept="image/*" onchange="showFilePreview(this)">
+      <div class="file-preview"></div>
+    `;
+      }
+    }
+
+    /* Show file preview */
+    function showFilePreview(input) {
+      const preview = input.nextElementSibling;
+      if (input.files.length > 0) {
+        const fileName = input.files[0].name;
+        const fileSize = (input.files[0].size / 1024).toFixed(2);
+        preview.textContent = `✓ ${fileName} (${fileSize} KB)`;
+        preview.classList.add('show');
+      } else {
+        preview.classList.remove('show');
+      }
+    }
+
+    /* Toast notification */
+    function showToast(message, type = 'success') {
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+    <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+    <span>${message}</span>
+  `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => toast.classList.add('show'), 10);
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, 3000);
+    }
+
+    /* Validate title */
+    function validateTitle() {
+      const titleInput = document.getElementById('title');
+      const errorMsg = document.getElementById('title-error');
+      const value = titleInput.value.trim();
+
+      if (!value) {
+        titleInput.classList.add('invalid');
+        titleInput.classList.remove('valid');
+        errorMsg.classList.add('show');
+        return false;
+      } else {
+        titleInput.classList.remove('invalid');
+        titleInput.classList.add('valid');
+        errorMsg.classList.remove('show');
+        return true;
+      }
+    }
+
+    /* Live validation */
+    document.getElementById('title').addEventListener('input', function () {
+      if (this.value.trim()) {
+        this.classList.remove('invalid');
+        this.classList.add('valid');
+        document.getElementById('title-error').classList.remove('show');
+      }
+    });
+
+    /* Default 2 blocks */
+    addBlock();
+    addBlock();
+
+    /* 🚀 Submit */
+    function submitForm() {
+      if (!validateTitle()) {
+        return;
+      }
+
+      const title = document.getElementById('title').value.trim();
+      const formData = new FormData();
+      formData.append('title', title);
+
+      const blocks = [];
+
+      let imageIndex = 0;
+
+      document.querySelectorAll('.block').forEach((block) => {
+        const type = block.querySelector('select')?.value;
+
+        if (type === 'text') {
+          const textarea = block.querySelector('textarea');
+          if (textarea && textarea.value.trim()) {
+            blocks.push({
+              type: 'text',
+              value: textarea.value.trim()
+            });
+          }
+        }
+
+        if (type === 'image') {
+          const fileInput = block.querySelector('input[type="file"]');
+          if (fileInput && fileInput.files.length > 0) {
+            const fileKey = `image_${imageIndex}`;
+            formData.append(fileKey, fileInput.files[0]);
+
+            blocks.push({
+              type: 'image',
+              fileKey
+            });
+
+            imageIndex++; // 🔥 ONLY increase for images
+          }
+        }
+      });
+
+
+      if (blocks.length === 0) {
+        showToast('Please add at least one content block', 'error');
+        return;
+      }
+
+      // Show loading state
+      const publishBtn = document.querySelector('.btn-publish');
+      publishBtn.classList.add('loading');
+      publishBtn.disabled = true;
+
+      // 🔥 MOST IMPORTANT LINE
+      formData.append('blocks', JSON.stringify(blocks));
+
+      fetch('https://lucifer0001.app.n8n.cloud/webhook/blog-post', {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => {
+          publishBtn.classList.remove('loading');
+          publishBtn.disabled = false;
+
+          if (data.success) {
+            showToast(data.message || 'Post published successfully!', 'success');
+          } else {
+            showToast('Failed to publish post', 'error');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          publishBtn.classList.remove('loading');
+          publishBtn.disabled = false;
+          showToast('Network error. Please try again.', 'error');
+        });
+    }
+  </script>
+
+</body>
+
+</html>
