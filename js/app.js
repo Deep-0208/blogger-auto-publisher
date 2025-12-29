@@ -1,6 +1,27 @@
+// ===== Configuration =====
+const API_ENDPOINT = "https://lucifer0001.app.n8n.cloud/webhook/blog-post";
+const API_KEY = "BLOGGER_UI_SECRET_123";
+
+// ===== Global State =====
 let blockCount = 0;
 
-/* ➕ Add block */
+// ===== Utility Functions =====
+
+/**
+ * Update block counter display
+ */
+function updateBlockCounter() {
+  const counter = document.getElementById("blockCounter");
+  const blocks = document.querySelectorAll(".block");
+  const count = blocks.length;
+  counter.textContent = `${count} block${count !== 1 ? "s" : ""}`;
+}
+
+// ===== Block Management =====
+
+/**
+ * Add a new content block
+ */
 function addBlock() {
   blockCount++;
 
@@ -24,28 +45,26 @@ function addBlock() {
   `;
 
   document.getElementById("blocks").appendChild(block);
+  updateBlockCounter();
 }
 
-/* ❌ Remove block with animation */
+/**
+ * Remove block with animation
+ * @param {HTMLButtonElement} btn - Remove button element
+ */
 function removeBlock(btn) {
   const block = btn.closest(".block");
   block.style.animation = "slideOut 0.3s ease-out";
-  setTimeout(() => block.remove(), 300);
+  setTimeout(() => {
+    block.remove();
+    updateBlockCounter();
+  }, 300);
 }
 
-/* Slide out animation */
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes slideOut {
-    to {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-  }
-`;
-document.head.appendChild(style);
-
-/* 🔄 Change block type */
+/**
+ * Change block content type (text/image)
+ * @param {HTMLSelectElement} select - Select dropdown element
+ */
 function changeType(select) {
   const container = select.parentElement.querySelector(".block-content");
   container.innerHTML = "";
@@ -64,7 +83,12 @@ function changeType(select) {
   }
 }
 
-/* Show file preview */
+// ===== File Handling =====
+
+/**
+ * Show preview for uploaded file
+ * @param {HTMLInputElement} input - File input element
+ */
 function showFilePreview(input) {
   const preview = input.nextElementSibling;
   if (input.files.length > 0) {
@@ -77,7 +101,13 @@ function showFilePreview(input) {
   }
 }
 
-/* Toast notification */
+// ===== Notifications =====
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - Toast type ('success' or 'error')
+ */
 function showToast(message, type = "success") {
   const existingToast = document.querySelector(".toast");
   if (existingToast) existingToast.remove();
@@ -94,11 +124,51 @@ function showToast(message, type = "success") {
 
   setTimeout(() => {
     toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 400);
+    setTimeout(() => toast.remove(), 500);
   }, 3000);
 }
 
-/* Validate title */
+/**
+ * Show multiple post links after successful publishing
+ * @param {Array} posts - Array of post objects with url property
+ */
+function showPostLinks(postsArray) {
+  const container = document.getElementById("resultLinks");
+
+  container.innerHTML = `
+    <h3>✅ Published Blog Links</h3>
+    <div style="margin-top:12px;font-family:monospace;"></div>
+  `;
+
+  const list = container.querySelector("div");
+
+  postsArray.forEach(({ blogId, url }) => {
+    const line = document.createElement("div");
+
+    line.style.marginBottom = "10px";
+    line.style.padding = "8px 10px";
+    line.style.background = "#f7fafc";
+    line.style.borderRadius = "6px";
+    line.style.cursor = "pointer";
+
+    line.textContent = `${blogId} : ${url}`;
+
+    // Click to copy
+    line.onclick = () => {
+      navigator.clipboard.writeText(`${url}`);
+      showToast("Copied to clipboard", "success");
+    };
+
+    list.appendChild(line);
+  });
+}
+
+// ===== Validation =====
+
+/**
+ * Validate post title
+ * @returns {boolean} - True if valid, false otherwise
+ */
 function validateTitle() {
   const titleInput = document.getElementById("title");
   const errorMsg = document.getElementById("title-error");
@@ -117,22 +187,65 @@ function validateTitle() {
   }
 }
 
-/* Live validation */
-document.getElementById("title").addEventListener("input", function () {
-  if (this.value.trim()) {
-    this.classList.remove("invalid");
-    this.classList.add("valid");
-    document.getElementById("title-error").classList.remove("show");
+/**
+ * Validate blog IDs input
+ * @returns {boolean} - True if valid, false otherwise
+ */
+function validateBlogIds() {
+  const blogIdsInput = document.getElementById("blogIds");
+  const value = blogIdsInput.value.trim();
+
+  if (!value) {
+    blogIdsInput.classList.add("invalid");
+    blogIdsInput.classList.remove("valid");
+    showToast("Please enter at least one Blog ID", "error");
+    return false;
+  } else {
+    blogIdsInput.classList.remove("invalid");
+    blogIdsInput.classList.add("valid");
+    return true;
   }
-});
+}
 
-/* Default 2 blocks */
-addBlock();
-addBlock();
+// ===== Form Management =====
 
-/* 🚀 Submit */
+/**
+ * Reset form to initial state
+ */
+function resetForm() {
+  // Clear title
+  const titleInput = document.getElementById("title");
+  titleInput.value = "";
+  titleInput.classList.remove("valid", "invalid");
+
+  // Clear blog IDs
+  const blogIdsInput = document.getElementById("blogIds");
+  blogIdsInput.value = "";
+  blogIdsInput.classList.remove("valid", "invalid");
+
+  // Hide title error
+  document.getElementById("title-error").classList.remove("show");
+
+  // Remove all blocks
+  const blocksContainer = document.getElementById("blocks");
+  blocksContainer.innerHTML = "";
+
+  // Reset counter
+  blockCount = 0;
+
+  // Add default 2 blocks again
+  addBlock();
+  addBlock();
+}
+
+// ===== Form Submission =====
+
+/**
+ * Submit form data to API
+ */
 function submitForm() {
-  if (!validateTitle()) {
+  // Validate inputs
+  if (!validateTitle() || !validateBlogIds()) {
     return;
   }
 
@@ -141,9 +254,9 @@ function submitForm() {
   formData.append("title", title);
 
   const blocks = [];
-
   let imageIndex = 0;
 
+  // Collect all block data
   document.querySelectorAll(".block").forEach((block) => {
     const type = block.querySelector("select")?.value;
 
@@ -168,51 +281,43 @@ function submitForm() {
           fileKey,
         });
 
-        imageIndex++; // 🔥 ONLY increase for images
+        imageIndex++;
       }
     }
   });
 
+  // Validate block content
   if (blocks.length === 0) {
     showToast("Please add at least one content block", "error");
     return;
   }
 
-  //reset form after submission
-  function resetForm() {
-  // Clear title
-  const titleInput = document.getElementById("title");
-  titleInput.value = "";
-  titleInput.classList.remove("valid", "invalid");
+  // Parse and validate blog IDs
+  const blogIdsInput = document.getElementById("blogIds").value.trim();
+  const blogIds = blogIdsInput
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
-  // Hide title error
-  document.getElementById("title-error").classList.remove("show");
-
-  // Remove all blocks
-  const blocksContainer = document.getElementById("blocks");
-  blocksContainer.innerHTML = "";
-
-  // Reset counter
-  blockCount = 0;
-
-  // Add default 2 blocks again
-  addBlock();
-  addBlock();
-}
-
+  if (blogIds.length === 0) {
+    showToast("Please enter valid Blog IDs", "error");
+    return;
+  }
 
   // Show loading state
   const publishBtn = document.querySelector(".btn-publish");
   publishBtn.classList.add("loading");
   publishBtn.disabled = true;
 
-  // 🔥 MOST IMPORTANT LINE
+  // Append data to FormData
   formData.append("blocks", JSON.stringify(blocks));
+  formData.append("blogIds", JSON.stringify(blogIds));
 
-  fetch("https://lucifer0001.app.n8n.cloud/webhook/blog-post", {
+  // Send to API
+  fetch(API_ENDPOINT, {
     method: "POST",
     headers: {
-      "x-api-key": "BLOGGER_UI_SECRET_123",
+      "x-api-key": API_KEY,
     },
     body: formData,
   })
@@ -221,7 +326,7 @@ function submitForm() {
       try {
         data = await res.json();
       } catch (e) {
-        // response was empty (security rejection)
+        throw new Error("Invalid response from server");
       }
 
       if (!res.ok) {
@@ -232,6 +337,13 @@ function submitForm() {
     })
     .then((data) => {
       showToast(data.message || "Post published successfully!", "success");
+
+      // Show post links if available
+      if (data.posts && typeof data.posts === "object") {
+        showPostLinks(data.posts);
+      }
+
+      // Reset form after successful submission
       resetForm();
     })
     .catch((err) => {
@@ -239,8 +351,42 @@ function submitForm() {
       showToast(err.message || "Unauthorized or network error", "error");
     })
     .finally(() => {
-      const publishBtn = document.querySelector(".btn-publish");
       publishBtn.classList.remove("loading");
       publishBtn.disabled = false;
     });
+}
+
+// ===== Initialization =====
+
+/**
+ * Initialize the application
+ */
+function init() {
+  // Add live validation to title input
+  document.getElementById("title").addEventListener("input", function () {
+    if (this.value.trim()) {
+      this.classList.remove("invalid");
+      this.classList.add("valid");
+      document.getElementById("title-error").classList.remove("show");
+    }
+  });
+
+  // Add live validation to blog IDs input
+  document.getElementById("blogIds").addEventListener("input", function () {
+    if (this.value.trim()) {
+      this.classList.remove("invalid");
+      this.classList.add("valid");
+    }
+  });
+
+  // Add default 2 blocks
+  addBlock();
+  addBlock();
+}
+
+// Run initialization when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
 }

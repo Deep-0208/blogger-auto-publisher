@@ -1,41 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Create Blogger Post</title>
-    <link rel="stylesheet" href="css/style.css">
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Blogger Post - Professional Publisher</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
 
-  <body>
-    <div class="container">
+<body>
+  <!-- Header Badge -->
+  <div class="page-badge">
+    <span class="badge-icon">✨</span>
+    <span>Multi-Blog Publisher</span>
+  </div>
+
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header-section">
+      <div class="header-icon">📝</div>
       <h2>Create Blogger Post</h2>
-      <p class="subtitle">
-        Design your content with flexible text and image blocks
-      </p>
-
-      <label class="required">Post Title</label>
-      <input
-        type="text"
-        id="title"
-        placeholder="Enter your post title..."
-        required
-      />
-      <div id="title-error" class="error-message">
-        Please enter a post title
-      </div>
-
-      <div id="blocks"></div>
-
-      <div class="action-bar">
-        <button class="btn-add" onclick="addBlock()">➕ Add Block</button>
-        <button class="btn-publish" onclick="submitForm()">
-          <span class="btn-text">🚀 Publish Post</span>
-          <span class="spinner"></span>
-        </button>
-      </div>
+      <p class="subtitle">Design your content with flexible text and image blocks</p>
     </div>
-    <script src="js/app.js"></script>
-  </body>
+
+    <!-- Form Section -->
+    <div class="form-section">
+      <div class="input-group">
+        <label class="required">Post Title</label>
+        <input type="text" id="title" placeholder="Enter your post title..." required>
+        <div id="title-error" class="error-message">Please enter a post title</div>
+      </div>
+
+      <div class="input-group">
+        <label class="required">Blogger Blog IDs</label>
+        <input type="text" id="blogIds" placeholder="Example: 68723648, 91824022, 86131150" required>
+        <small class="input-hint">
+          <span class="hint-icon">💡</span>
+          Enter multiple Blog IDs separated by comma
+        </small>
+      </div>
+
+      <div id="resultLinks" style="margin-top:30px;"></div>
+    </div>
+
+    <!-- Blocks Section -->
+    <div class="blocks-wrapper">
+      <div class="section-header">
+        <h3>Content Blocks</h3>
+        <span class="block-count" id="blockCounter">0 blocks</span>
+      </div>
+      <div id="blocks"></div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="btn-add" onclick="addBlock()">
+        <span class="btn-icon">➕</span>
+        <span>Add Block</span>
+      </button>
+      <button class="btn-publish" onclick="submitForm()">
+        <span class="btn-text">
+          <span class="btn-icon">🚀</span>
+          <span>Publish Post</span>
+        </span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer Credit -->
+  <div class="footer-credit">
+    Built with ❤️ for efficient blogging
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
 </html>
-  
