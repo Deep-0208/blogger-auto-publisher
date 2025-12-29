@@ -315,6 +315,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-**Made with ❤️ by [Your Name]**
+**Made with ❤️ by Deep Panchal**
+Built by an automation enthusiast using n8n and JavaScript.
 
 ⭐ If you find this project helpful, please give it a star on GitHub!
