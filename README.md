@@ -293,9 +293,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 💬 Support
 
-- 📧 Email: your-email@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/n8n-blogger-automation/issues)
-- 💡 Discussions: [GitHub Discussions](https://github.com/your-username/n8n-blogger-automation/discussions)
+- 📧 Email: deeppanchal0208@gmail.com
+- 🐛 Issues: [GitHub Issues](https://github.com/Deep-0208/n8n-blogger-automation/issues)
+- 💡 Discussions: [GitHub Discussions](https://github.com/Deep-0208/n8n-blogger-automation/discussions)
 
 ---
 
