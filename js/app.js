@@ -1,3 +1,6 @@
+// ===== API CONFIG =====
+const API_ENDPOINT = "/api/blog";
+
 // ===== Global State =====
 let blockCount = 0;
 
@@ -312,9 +315,6 @@ function submitForm() {
   // Send to API
   fetch(API_ENDPOINT, {
     method: "POST",
-    headers: {
-      "x-api-key": API_KEY,
-    },
     body: formData,
   })
     .then(async (res) => {

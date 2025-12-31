@@ -2,18 +2,17 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response(
+      JSON.stringify({ success: false, message: "Method Not Allowed" }),
+      { status: 405, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  // 🔐 Forward request to n8n (SECRET)
-  const N8N_WEBHOOK = env.N8N_WEBHOOK_URL;
-  const N8N_API_KEY = env.N8N_API_KEY;
-
   try {
-    const response = await fetch(N8N_WEBHOOK, {
+    const response = await fetch(env.N8N_WEBHOOK_URL, {
       method: "POST",
       headers: {
-        "x-api-key": N8N_API_KEY
+        "x-api-key": env.N8N_API_KEY
       },
       body: await request.formData()
     });
@@ -22,17 +21,15 @@ export async function onRequest(context) {
 
     return new Response(text, {
       status: response.status,
-      headers: {
-        "Content-Type": "application/json"
-      }
+      headers: { "Content-Type": "application/json" }
     });
-  } catch (err) {
+  } catch {
     return new Response(
       JSON.stringify({
         success: false,
         message: "Server error. Please try again."
       }),
-      { status: 500 }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
