@@ -200,7 +200,6 @@ function resetForm() {
   document.getElementById("title").value = "";
   document.getElementById("blogIds").value = "";
   document.getElementById("blocks").innerHTML = "";
-  document.getElementById("resultLinks").innerHTML = "";
 
   blockCount = 0;
   addBlock();
