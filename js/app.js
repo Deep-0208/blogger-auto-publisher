@@ -1,5 +1,5 @@
 // ===== Configuration =====
-const API_ENDPOINT = "https://lucifer0001.app.n8n.cloud/webhook/blog-post";
+const API_ENDPOINT = "https://lucifer0001.app.n8n.cloud/webhook/blog-post-production";
 const API_KEY = "BLOGGER_UI_SECRET_123";
 
 // ===== Global State =====
