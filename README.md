@@ -84,9 +84,6 @@ You need to configure the following credentials **inside n8n**:
 | **Cloudinary** | API Key | Cloud Name, API Key, API Secret |
 | **Webhook** | Secret Token | Webhook URL, Auth Token (optional) |
 
-> ❗ **Important:**  
-> All secrets are handled securely in n8n and are **never stored in this repository**.
-
 ---
 
 ## 🚀 Setup Instructions
