@@ -313,11 +313,13 @@ function submitForm() {
   formData.append("blogIds", JSON.stringify(blogIds));
 
   // Send to API
-  fetch(API_ENDPOINT, {
+  fetch("/api/blog", {
     method: "POST",
+    headers: {
+      "x-api-key": "pub_X92ks8QmA1",
+    },
     body: formData,
-  })
-    .then(async (res) => {
+  }).then(async (res) => {
       let data = {};
       try {
         data = await res.json();

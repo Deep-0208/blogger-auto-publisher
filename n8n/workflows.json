@@ -1,0 +1,429 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "/**\n * Normalize incoming title.\n * Falls back safely through possible locations and defaults to \"Untitled\".\n */\nconst title =\n  $json.title ??\n  $json.body?.title ??\n  'Untitled';\n\n/**\n * Extract raw blocks and blog IDs from either root or body payload.\n * These may arrive as arrays or stringified JSON.\n */\nconst rawBlocks =\n  $json.blocks ??\n  $json.body?.blocks;\n\nconst rawBlogIds =\n  $json.blogIds ??\n  $json.body?.blogIds;\n\n/**\n * Safely parses an input into an array.\n * - Accepts arrays directly\n * - Attempts to parse stringified JSON arrays\n * - Gracefully fails to an empty array on invalid input\n */\nfunction safeParseArray(input) {\n  if (!input) return [];\n  if (Array.isArray(input)) return input;\n  if (typeof input !== 'string') return [];\n\n  try {\n    let cleaned = input.trim();\n\n    // Remove accidental wrapping quotes (common in webhook payloads)\n    if (\n      (cleaned.startsWith('\"') && cleaned.endsWith('\"')) ||\n      (cleaned.startsWith(\"'\") && cleaned.endsWith(\"'\"))\n    ) {\n      cleaned = cleaned.slice(1, -1);\n    }\n\n    const parsed = JSON.parse(cleaned);\n    return Array.isArray(parsed) ? parsed : [];\n  } catch {\n    // Fail silently to ensure workflow stability\n    return [];\n  }\n}\n\n/**\n * Parse blocks and blog IDs into guaranteed arrays\n */\nconst blocks = safeParseArray(rawBlocks);\nconst blogIds = safeParseArray(rawBlogIds);\n\n/**\n * Binary payload map (e.g., uploaded images)\n */\nconst binaries = $binary || {};\nconst output = [];\n\n/**\n * Create one output item per image block.\n * Each item carries:\n * - The specific image binary\n * - Full content context (blocks, title, blogIds)\n */\nblocks.forEach(block => {\n  if (\n    block?.type === 'image' &&\n    block?.fileKey &&\n    binaries[block.fileKey]\n  ) {\n    output.push({\n      json: {\n        fileKey: block.fileKey,\n        blocks,\n        title,\n        blogIds\n      },\n      binary: {\n        image: binaries[block.fileKey]\n      }\n    });\n  }\n});\n\n/**\n * If no image blocks exist, still forward the content payload\n * to keep downstream nodes functional.\n */\nif (output.length === 0) {\n  return [{\n    json: {\n      blocks,\n      title,\n      blogIds\n    }\n  }];\n}\n\n/**\n * Return one item per image when images are present\n */\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2320,
+        -384
+      ],
+      "id": "2082e2b2-9554-4312-9d33-f0465a708685",
+      "name": "Extract Blocks & Images1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst source = items[0];\n\nconst title = source.json.title || 'Untitled';\nconst blocks = source.json.blocks || [];\nconst imageMap = source.json.imageMap || {};\nconst blogIds = source.json.blogIds || [];\n\nlet html = '';\n\n// Escape HTML safely\nconst escapeHtml = (str) =>\n  str.replace(/&/g, '&amp;')\n     .replace(/</g, '&lt;')\n     .replace(/>/g, '&gt;')\n     .replace(/\\n/g, '<br>');\n\n// Build HTML in correct order\nblocks.forEach(block => {\n\n  if (block.type === 'text' && block.value) {\n    html += `<p>${escapeHtml(block.value)}</p>\\n`;\n  }\n\n  if (block.type === 'image') {\n    const url = imageMap[block.fileKey];\n    if (url) {\n      html += `\n        <div style=\"text-align:center;margin:16px 0;\">\n          <img src=\"${url}\" style=\"max-width:100%;height:auto;\" />\n        </div>\n      `;\n    }\n  }\n});\n\nreturn [{\n  json: {\n    title,\n    html,\n    blogIds\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -352
+      ],
+      "id": "839794e2-0e86-4160-843b-eb21d86729a8",
+      "name": "Generate Blogger HTML Content1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e7eea94a-d345-4d8c-967f-2aeb422f1ea1",
+              "leftValue": "={{ !!$binary?.image }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2096,
+        -480
+      ],
+      "id": "c4ac96e4-3104-4da2-92f1-129290661c3d",
+      "name": "Check – Has Images"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Collect all incoming items from previous nodes.\n * These typically include Cloudinary upload results and\n * shared content metadata.\n */\nconst items = $input.all();\n\n/**\n * Aggregated data containers\n */\nlet secureUrls = [];\nlet imageKeys = [];\nlet blocks = [];\nlet title = 'Untitled';\nlet blogIds = [];\n\n/**\n * 1️⃣ Extract Cloudinary secure URLs\n * Assumes one item contains the `secure_urls` array\n * returned by the upload step.\n */\nitems.forEach(item => {\n  if (Array.isArray(item.json.secure_urls)) {\n    secureUrls = item.json.secure_urls;\n  }\n});\n\n/**\n * 2️⃣ Collect image file keys\n * Order is preserved to correctly map images\n * back to their original blocks.\n */\nitems.forEach(item => {\n  if (item.json.fileKey) {\n    imageKeys.push(item.json.fileKey);\n  }\n});\n\n/**\n * 3️⃣ Extract shared content data (once)\n * Blocks, title, and blog IDs are identical across items,\n * so the last valid occurrence is sufficient.\n */\nitems.forEach(item => {\n  if (Array.isArray(item.json.blocks)) {\n    blocks = item.json.blocks;\n  }\n\n  if (item.json.title) {\n    title = item.json.title;\n  }\n\n  if (Array.isArray(item.json.blogIds)) {\n    blogIds = item.json.blogIds;\n  }\n});\n\n/**\n * 4️⃣ Build a lookup map of fileKey → secure URL\n * This enables easy replacement of image placeholders\n * inside the content blocks.\n */\nlet imageMap = {};\n\nimageKeys.forEach((key, index) => {\n  if (secureUrls[index]) {\n    imageMap[key] = secureUrls[index];\n  }\n});\n\n/**\n * Return a single consolidated item containing:\n * - Original content blocks\n * - Resolved image URLs\n * - Title\n * - Blog associations\n */\nreturn [{\n  json: {\n    blocks,\n    title,\n    imageMap,\n    blogIds\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -352
+      ],
+      "id": "3ecc1a15-7e5b-4048-a7aa-5e3bfd9932dc",
+      "name": "Mapper – Image Key to URL"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{ Number($json.success === false ? 400 : 200) }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        160,
+        -384
+      ],
+      "id": "36c23af8-f59e-4c7a-bea3-2e7f01e2f943",
+      "name": "API – Send Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudinary.com/v1_1/dm0mvug9j/image/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "upload_preset",
+              "value": "blogger_unsigned"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1872,
+        -608
+      ],
+      "id": "ae4032b5-d1e6-4c16-8209-c10f3545f47f",
+      "name": "Cloudinary – Upload Image",
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst secureUrls = [];\n\nitems.forEach(item => {\n  if (item.json.secure_url) {\n    secureUrls.push(item.json.secure_url);\n  }\n});\n\nreturn [{\n  json: {\n    secure_urls: secureUrls\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        -608
+      ],
+      "id": "4f0642b2-a9fc-425a-b299-fd3e75c576ef",
+      "name": "Cloudinary – Collect Image URLs",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1424,
+        -352
+      ],
+      "id": "00bbc482-96db-4411-b3ba-ec36274e00d3",
+      "name": "Merge – Content + Images",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "let blogIds = $json.blogIds;\n\nif (!Array.isArray(blogIds) || blogIds.length === 0) {\n  return [{\n    json: {\n      success: false,\n      message: \"No Blog IDs provided\"\n    }\n  }];\n}\n\n// Normalize blogIds\nif (typeof blogIds === 'string') {\n  try {\n    blogIds = JSON.parse(blogIds);\n  } catch {\n    throw new Error('Invalid Blog IDs format');\n  }\n}\n\n\n\nconst { title, html } = $json;\n\nif (!html) {\n  throw new Error('HTML content missing');\n}\n\nreturn blogIds.map(blogId => ({\n  json: {\n    blogId,\n    title,\n    html\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        -352
+      ],
+      "id": "c8a2e4a4-6d95-40f1-b96e-fc09376dfe2d",
+      "name": "Expand – Create Post per Blog"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/blogger/v3/blogs/{{ $json.blogId }}/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.html }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -304,
+        -352
+      ],
+      "id": "a2360d5c-40f3-414e-ba9f-132dee730b53",
+      "name": "Blogger – Create Draft Post",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "TGXDQItya7IezqIn",
+          "name": "Google account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $json.html || '';\n\n// Final safety check\nif (!html.trim()) {\n  return [{\n    json: {\n      success: false,\n      message: \"HTML content missing\"\n    }\n  }];\n}\n\nreturn [$json];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -352
+      ],
+      "id": "3db9b29a-4deb-4875-8345-ef3ecba8dd02",
+      "name": "Validate – Content Not Empty"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "blog-post-production",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2768,
+        -384
+      ],
+      "id": "c8696db4-3800-4b16-b17f-10f4271675dc",
+      "name": "Receive Blog Post Request",
+      "webhookId": "ee8d1e83-23e9-4b0e-bf82-33c34d9368b9"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Extract headers from the first incoming item.\n * Defaults to an empty object to avoid runtime errors.\n */\nconst headers = $input.first().json.headers || {};\n\n/**\n * Retrieve API key from headers.\n * Header names are checked in multiple common casings\n * to ensure compatibility across clients and gateways.\n */\nconst apiKey =\n  headers['x-api-key'] ||\n  headers['X-API-KEY'] ||\n  headers['x-api-key'.toLowerCase()];\n\n/**\n * Validate API key to authorize request.\n * If validation fails, short-circuit the workflow\n * and return a standardized unauthorized response.\n */\nif (apiKey !== $env.N8N_API_KEY) {\n  return [{\n    json: {\n      success: false,\n      message: 'Unauthorized request'\n    }\n  }];\n}\n\n/**\n * Authorization successful.\n * Forward all incoming items to downstream nodes.\n */\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2544,
+        -384
+      ],
+      "id": "fd287cb1-bba9-42ef-8d7f-302f56ae1292",
+      "name": "Auth – Validate API Key & Blog Ids"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst posts = [];\nlet successCount = 0;\nlet failureCount = 0;\n\nitems.forEach(item => {\n  // ❌ ERROR CASE\n  if (item.json?.error) {\n    failureCount++;\n\n    posts.push({\n      blogId: item.json.blogId || item.json.blog?.id || null,\n      status: 'failed',\n      message: item.json.error.message || 'Failed to create draft post',\n      statusCode: item.json.error.code || 500\n    });\n\n    return;\n  }\n\n  // ✅ SUCCESS CASE\n  successCount++;\n\n  posts.push({\n    blogId: item.json.blog?.id || item.json.blogId || null,\n    status: 'success',\n    message: 'Draft post created successfully',\n    postId: item.json.id || null,\n    url: item.json.url || null\n  });\n});\n\nconst total = successCount + failureCount;\n\n/**\n * 🧠 Build frontend-friendly message\n */\nlet summaryMessage = '';\nlet success = true;\n\nif (total === 1) {\n  // 🔹 SINGLE BLOG CASE\n  if (successCount === 1) {\n    summaryMessage = 'Draft post created successfully.';\n  } else {\n    success = false;\n    summaryMessage = `Failed to create draft post. ${\n      posts[0]?.message || 'Please check Blog ID and permissions.'\n    }`;\n  }\n} else {\n  // 🔹 MULTIPLE BLOG CASE\n  if (failureCount === 0) {\n    summaryMessage = `All ${successCount} blog posts were created successfully.`;\n  } else if (successCount === 0) {\n    success = false;\n    summaryMessage = `Failed to create posts for all ${failureCount} blogs. Please check Blog IDs and permissions.`;\n  } else {\n    success = false;\n    summaryMessage = `Posts created for ${successCount} blogs, but failed for ${failureCount} blogs.`;\n  }\n}\n\n/**\n * ✅ Final response for frontend\n */\nreturn [{\n  json: {\n    success,\n    message: summaryMessage,\n    summary: {\n      total,\n      success: successCount,\n      failed: failureCount\n    },\n    posts\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -352
+      ],
+      "id": "fab6782b-b81b-47f0-88fb-b6543add2fda",
+      "name": "Handle Blogger Error"
+    }
+  ],
+  "connections": {
+    "Extract Blocks & Images1": {
+      "main": [
+        [
+          {
+            "node": "Check – Has Images",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge – Content + Images",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate Blogger HTML Content1": {
+      "main": [
+        [
+          {
+            "node": "Validate – Content Not Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check – Has Images": {
+      "main": [
+        [
+          {
+            "node": "Cloudinary – Upload Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge – Content + Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapper – Image Key to URL": {
+      "main": [
+        [
+          {
+            "node": "Generate Blogger HTML Content1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API – Send Response": {
+      "main": [
+        []
+      ]
+    },
+    "Cloudinary – Upload Image": {
+      "main": [
+        [
+          {
+            "node": "Cloudinary – Collect Image URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cloudinary – Collect Image URLs": {
+      "main": [
+        [
+          {
+            "node": "Merge – Content + Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge – Content + Images": {
+      "main": [
+        [
+          {
+            "node": "Mapper – Image Key to URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand – Create Post per Blog": {
+      "main": [
+        [
+          {
+            "node": "Blogger – Create Draft Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blogger – Create Draft Post": {
+      "main": [
+        [
+          {
+            "node": "Handle Blogger Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate – Content Not Empty": {
+      "main": [
+        [
+          {
+            "node": "Expand – Create Post per Blog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Blog Post Request": {
+      "main": [
+        [
+          {
+            "node": "Auth – Validate API Key & Blog Ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth – Validate API Key & Blog Ids": {
+      "main": [
+        [
+          {
+            "node": "Extract Blocks & Images1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Blogger Error": {
+      "main": [
+        [
+          {
+            "node": "API – Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "7ea3e66c8427a0d034f60f7f70157f9dc60ad8abe02ce7e461a71f2335abb59d"
+  }
+}
