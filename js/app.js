@@ -256,7 +256,7 @@ function submitForm() {
   btn.classList.add("loading");
   btn.disabled = true;
 
-  fetch("http://localhost:5678/webhook-test/blog-post-production", {
+  fetch("https://lucifer641.app.n8n.cloud/webhook/blog-post-production", {
     method: "POST",
     body: formData
   })
