@@ -256,7 +256,7 @@ function submitForm() {
   btn.classList.add("loading");
   btn.disabled = true;
 
-  fetch(API_ENDPOINT, {
+  fetch("http://localhost:5678/webhook/blog-post-production", {
     method: "POST",
     body: formData
   })
